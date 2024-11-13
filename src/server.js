@@ -4,36 +4,29 @@ const express = require('express');
 const cors = require('cors');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
-const contactsRouter = require('./routes/contacts'); // Імпортуємо роут для контактів
-const initMongoConnection = require('./db/initMongoConnection'); // Імпорт підключення до MongoDB
+const contactsRouter = require('./routers/contacts');
+const initMongoConnection = require('./db/initMongoConnection');
+const errorHandler = require('./middlewares/errorHandler');
+const notFoundHandler = require('./middlewares/notFoundHandler');
 
-// Функція для налаштування сервера
 async function setupServer() {
-  await initMongoConnection(); // Підключення до MongoDB
+  await initMongoConnection();
 
-  const app = express(); // Створюємо сервер
-
-  // Налаштовуємо CORS
+  const app = express();
   app.use(cors());
-
-  // Налаштовуємо логер pino
   const logger = pino();
   app.use(pinoHttp({ logger }));
-
-  // Використовуємо JSON парсер для обробки запитів
   app.use(express.json());
 
-  // Додаємо маршрут для контактів
+  // Маршрути для контактів
   app.use('/contacts', contactsRouter);
 
-  // Маршрут для обробки неіснуючих роутів
-  app.use((req, res, next) => {
-    res.status(404).json({
-      message: 'Not found',
-    });
-  });
+  // Middleware для неіснуючих маршрутів
+  app.use(notFoundHandler);
 
-  // Встановлюємо порт, використовуючи змінну PORT або значення за замовчуванням
+  // Middleware для обробки помилок
+  app.use(errorHandler);
+
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
