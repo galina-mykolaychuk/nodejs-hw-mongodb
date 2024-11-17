@@ -1,114 +1,147 @@
 // src/controllers/contacts.js
 
-const createError = require('http-errors');
-const contactsService = require('../services/contacts');
-const ctrlWrapper = require('../utils/ctrlWrapper');
+const Contact = require('../db/models/Contact');
 
-// Контролер для отримання всіх контактів
-const getAllContacts = ctrlWrapper(async (req, res) => {
-  const contacts = await contactsService.getAllContacts();
+// Отримати всі контакти з підтримкою пагінації, сортування та фільтрації
+const getAllContacts = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      perPage = 10,
+      sortBy = 'name',
+      sortOrder = 'asc',
+      isFavourite,
+      contactType,
+    } = req.query;
 
-  res.status(200).json({
-    status: 200,
-    message: 'Successfully found contacts!',
-    data: contacts,
-  });
-});
+    // Фільтр для пошуку контактів
+    const filter = {};
 
-// Контролер для отримання контакту за ID
-const getContactById = ctrlWrapper(async (req, res) => {
-  const { contactId } = req.params;
-  const contact = await contactsService.getContactById(contactId);
+    // Фільтрація за isFavourite (якщо передано в запиті)
+    if (isFavourite !== undefined) {
+      filter.isFavourite = isFavourite === 'true'; // Перетворення на булеве значення
+    }
 
-  if (!contact) {
-    throw createError(404, 'Contact not found');
+    // Фільтрація за contactType (якщо передано в запиті)
+    if (contactType) {
+      filter.contactType = contactType;
+    }
+
+    // Загальна кількість контактів, що відповідають фільтрам
+    const totalItems = await Contact.countDocuments(filter);
+    const totalPages = Math.ceil(totalItems / perPage); // Розрахунок загальної кількості сторінок
+    const hasPreviousPage = page > 1; // Чи є попередня сторінка
+    const hasNextPage = page < totalPages; // Чи є наступна сторінка
+
+    // Отримання контактів з фільтром, пагінацією та сортуванням
+    const contacts = await Contact.find(filter)
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }) // Сортування за полем sortBy (за замовчуванням - name)
+      .skip((page - 1) * perPage) // Пропуск необхідної кількості елементів для пагінації
+      .limit(parseInt(perPage, 10)); // Обмеження кількості елементів на сторінці
+
+    // Відправка відповіді з результатами
+    res.status(200).json({
+      status: 200,
+      message: 'Successfully found contacts!',
+      data: {
+        data: contacts,
+        page: parseInt(page, 10),
+        perPage: parseInt(perPage, 10),
+        totalItems,
+        totalPages,
+        hasPreviousPage,
+        hasNextPage,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
+};
 
-  res.status(200).json({
-    status: 200,
-    message: `Successfully found contact with id ${contactId}!`,
-    data: contact,
-  });
-});
+// Отримати контакт за ID
+const getContactById = async (req, res) => {
+  const { contactId } = req.params;
+  try {
+    const contact = await Contact.findById(contactId);
+    if (!contact) {
+      return res.status(404).json({ message: 'Contact not found' });
+    }
+    res.status(200).json({
+      status: 200,
+      message: 'Successfully found contact!',
+      data: contact,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-// Контролер для створення контакту
-const createContact = ctrlWrapper(async (req, res) => {
+// Створити новий контакт
+const createContact = async (req, res) => {
   const { name, phoneNumber, email, isFavourite, contactType } = req.body;
+  try {
+    const contact = new Contact({
+      name,
+      phoneNumber,
+      email,
+      isFavourite,
+      contactType,
+    });
+    await contact.save();
+    res.status(201).json({
+      status: 201,
+      message: 'Successfully created contact!',
+      data: contact,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-  // Перевірка на обов'язкові поля
-  if (!name || !phoneNumber || !contactType) {
-    throw createError(
-      400,
-      'Missing required fields: name, phoneNumber, and contactType',
+// Оновити контакт
+const updateContact = async (req, res) => {
+  const { contactId } = req.params;
+  const { name, phoneNumber, email, isFavourite, contactType } = req.body;
+  try {
+    const updatedContact = await Contact.findByIdAndUpdate(
+      contactId,
+      { name, phoneNumber, email, isFavourite, contactType },
+      { new: true },
     );
+    if (!updatedContact) {
+      return res.status(404).json({ message: 'Contact not found' });
+    }
+    res.status(200).json({
+      status: 200,
+      message: 'Successfully updated contact!',
+      data: updatedContact,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
+};
 
-  // Викликаємо сервіс для створення нового контакту
-  const newContact = await contactsService.createContact({
-    name,
-    phoneNumber,
-    email,
-    isFavourite,
-    contactType,
-  });
-
-  res.status(201).json({
-    status: 201,
-    message: 'Successfully created a contact!',
-    data: newContact,
-  });
-});
-
-// Контролер для оновлення контакту
-const updateContact = ctrlWrapper(async (req, res) => {
+// Видалити контакт
+const deleteContact = async (req, res) => {
   const { contactId } = req.params;
-  const { name, phoneNumber, email, isFavourite, contactType } = req.body;
-
-  // Пошук контакту по ID
-  const contact = await contactsService.getContactById(contactId);
-
-  if (!contact) {
-    throw createError(404, 'Contact not found');
+  try {
+    const contact = await Contact.findByIdAndDelete(contactId);
+    if (!contact) {
+      return res.status(404).json({ message: 'Contact not found' });
+    }
+    res.status(200).json({
+      status: 200,
+      message: 'Successfully deleted contact!',
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  // Оновлення тільки тих полів, які були передані
-  if (name) contact.name = name;
-  if (phoneNumber) contact.phoneNumber = phoneNumber;
-  if (email) contact.email = email;
-  if (isFavourite !== undefined) contact.isFavourite = isFavourite;
-  if (contactType) contact.contactType = contactType;
-
-  // Збереження змін
-  await contact.save();
-
-  res.status(200).json({
-    status: 200,
-    message: 'Successfully patched a contact!',
-    data: contact,
-  });
-});
-
-// Контролер для видалення контакту
-const deleteContact = ctrlWrapper(async (req, res) => {
-  const { contactId } = req.params;
-
-  // Пошук контакту за ID
-  const contact = await contactsService.getContactById(contactId);
-
-  if (!contact) {
-    throw createError(404, 'Contact not found');
-  }
-
-  // Видалення контакту
-  await contactsService.deleteContact(contactId);
-
-  res.status(204).send(); // Відповідь без тіла, статус 204
-});
+};
 
 module.exports = {
   getAllContacts,
   getContactById,
   createContact,
   updateContact,
-  deleteContact, // Додано deleteContact
+  deleteContact,
 };

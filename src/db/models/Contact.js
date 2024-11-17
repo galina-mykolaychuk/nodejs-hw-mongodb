@@ -17,6 +17,12 @@ const contactSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // автоматично додає поля createdAt та updatedAt
+    toJSON: {
+      transform(doc, ret) {
+        delete ret.__v; // Видалення поля __v
+        return ret;
+      },
+    },
   },
 );
 
