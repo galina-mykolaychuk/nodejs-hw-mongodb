@@ -6,7 +6,7 @@ const Joi = require('joi');
 const contactSchema = Joi.object({
   name: Joi.string().min(3).max(20).required(), // Ім'я
   phoneNumber: Joi.string().min(3).max(20).required(), // Телефонний номер
-  email: Joi.string().email().allow(null).required(), // Email або null
+  email: Joi.string().email().optional().allow(null), // Email необов’язковий
   isFavourite: Joi.boolean().optional(), // Чи є улюбленим
   contactType: Joi.string().valid('home', 'work', 'personal').required(), // Тип контакту
   createdAt: Joi.date().default(() => new Date().toISOString()), // Дата створення
@@ -17,7 +17,7 @@ const contactSchema = Joi.object({
 const contactUpdateSchema = Joi.object({
   name: Joi.string().min(3).max(20),
   phoneNumber: Joi.string().min(3).max(20),
-  email: Joi.string().email().allow(null), // Email або null
+  email: Joi.string().email().optional().allow(null), // Email необов’язковий
   isFavourite: Joi.boolean(),
   contactType: Joi.string().valid('home', 'work', 'personal'),
   updatedAt: Joi.date().default(() => new Date().toISOString()), // Автоматично оновлюється
