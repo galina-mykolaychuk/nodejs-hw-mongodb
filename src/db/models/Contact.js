@@ -2,6 +2,7 @@
 
 const mongoose = require('mongoose');
 
+// Оновлення схеми для додавання поля userId
 const contactSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -13,6 +14,12 @@ const contactSchema = new mongoose.Schema(
       enum: ['work', 'home', 'personal'],
       required: true,
       default: 'personal',
+    },
+    userId: {
+      // Додаємо поле для userId
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User', // Це зв'язок із моделлю користувача
+      required: true,
     },
   },
   {
