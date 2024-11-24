@@ -1,1 +1,1 @@
-Node.js MongoDB homework
+nodejs-hw-mongodb
