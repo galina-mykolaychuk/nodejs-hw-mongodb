@@ -1,33 +1,38 @@
 // src/middlewares/authenticate.js
 
 const createHttpError = require('http-errors');
-const { SessionsCollection } = require('../db/models/Session');
-const { UserCollection } = require('../db/models/User');
+const Session = require('../db/models/Session');
+const User = require('../db/models/User');
 
+// Middleware для автентифікації користувачів
 const authenticate = async (req, res, next) => {
   try {
-    // Логування початку запиту
     console.log('--- Middleware authenticate ---');
     console.log('Request Headers:', req.headers);
 
-    // Отримуємо access токен з заголовка Authorization
+    // Отримуємо заголовок Authorization
     const authHeader = req.headers['authorization'];
     if (!authHeader) {
       console.log('Authorization header is missing');
-      return next(createHttpError(401, 'Please provide authorization header'));
+      return next(createHttpError(401, 'Authorization header is missing'));
     }
 
-    // Перевірка формату заголовка
+    // Перевіряємо формат заголовка (повинен починатися з Bearer)
     const [bearer, token] = authHeader.split(' ');
     if (bearer !== 'Bearer' || !token) {
       console.log('Authorization header format is incorrect');
-      return next(createHttpError(401, 'Auth header should be of type Bearer'));
+      return next(
+        createHttpError(
+          401,
+          'Authorization header must be in the format Bearer <token>',
+        ),
+      );
     }
 
     console.log('Extracted Token:', token);
 
-    // Перевіряємо токен у базі даних (шукаємо сесію)
-    const session = await SessionsCollection.findOne({ accessToken: token });
+    // Шукаємо сесію в базі даних за токеном
+    const session = await Session.findOne({ accessToken: token });
     if (!session) {
       console.log('Session not found for token:', token);
       return next(createHttpError(401, 'Session not found'));
@@ -35,16 +40,16 @@ const authenticate = async (req, res, next) => {
 
     console.log('Session Found:', session);
 
-    // Перевірка, чи не прострочений токен
+    // Перевіряємо, чи не прострочений токен
     const isAccessTokenExpired =
       new Date() > new Date(session.accessTokenValidUntil);
     if (isAccessTokenExpired) {
       console.log('Access token expired for session:', session);
-      return next(createHttpError(401, 'Access token expired'));
+      return next(createHttpError(401, 'Access token has expired'));
     }
 
-    // Отримуємо інформацію про користувача за допомогою session.userId
-    const user = await UserCollection.findById(session.userId);
+    // Шукаємо користувача в базі даних за session.userId
+    const user = await User.findById(session.userId);
     if (!user) {
       console.log('User not found for session:', session);
       return next(createHttpError(401, 'User not found'));
