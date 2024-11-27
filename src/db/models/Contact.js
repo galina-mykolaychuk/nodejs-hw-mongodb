@@ -18,7 +18,7 @@ const contactSchema = new mongoose.Schema(
     userId: {
       // Додаємо поле для userId
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // Це зв'язок із моделлю користувача
+      ref: 'User',
       required: true,
     },
   },

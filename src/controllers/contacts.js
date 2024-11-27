@@ -84,7 +84,10 @@ const deleteContact = async (req, res, next) => {
       return next(createHttpError(404, 'Contact not found or not authorized'));
     }
 
-    res.status(200).json({ message: 'Contact deleted successfully' });
+    res.status(200).json({
+      status: 200,
+      message: 'Contact deleted successfully',
+    });
   } catch (error) {
     next(error);
   }

@@ -61,7 +61,6 @@ const authenticate = async (req, res, next) => {
     req.user = user;
     console.log('User added to request:', req.user);
 
-    // Продовжуємо обробку запиту
     next();
   } catch (err) {
     console.error('Error in authenticate middleware:', err); // Логування помилки

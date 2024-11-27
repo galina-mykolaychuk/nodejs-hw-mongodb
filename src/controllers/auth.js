@@ -4,28 +4,25 @@ const authService = require('../services/auth');
 const createHttpError = require('http-errors');
 const Session = require('../db/models/Session');
 const jwt = require('jsonwebtoken');
+const validateBody = require('../middlewares/validateBody');
+const validationSchemas = require('../validation/authSchemas');
 
 // Реєстрація нового користувача
 const registerUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      throw createHttpError(
-        400,
-        'All fields (name, email, password) are required.',
-      );
-    }
-
     const newUser = await authService.register({ name, email, password });
 
     res.status(201).json({
-      status: 'success',
+      status: '201',
       message: 'Successfully registered a user!',
       data: {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
+        createdAt: newUser.createdAt,
+        updatedAt: newUser.updatedAt,
       },
     });
   } catch (error) {
@@ -37,10 +34,6 @@ const registerUser = async (req, res, next) => {
 const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      throw createHttpError(400, 'Email and password are required.');
-    }
 
     const user = await authService.login({ email, password });
     const { accessToken, refreshToken } = authService.generateTokens(user._id);
@@ -62,7 +55,7 @@ const loginUser = async (req, res, next) => {
     });
 
     res.status(200).json({
-      status: 'success',
+      status: '200',
       message: 'Successfully logged in a user!',
       data: {
         accessToken,
@@ -110,7 +103,7 @@ const refreshSession = async (req, res, next) => {
     });
 
     res.status(200).json({
-      status: 'success',
+      status: '200',
       message: 'Successfully refreshed a session!',
       data: {
         accessToken,
@@ -126,18 +119,15 @@ const logoutUser = async (req, res, next) => {
   try {
     const { refreshToken } = req.cookies;
 
-    // Перевірка наявності refresh токена
     if (!refreshToken) {
       throw createHttpError(401, 'No refresh token provided.');
     }
 
-    // Видалення сесії за refresh токеном
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     const sessionId = decoded.userId;
 
     await Session.findOneAndDelete({ userId: sessionId });
 
-    // Видалення refresh токена з cookies
     res.clearCookie('refreshToken', { httpOnly: true });
 
     res.status(204).send();
@@ -146,9 +136,15 @@ const logoutUser = async (req, res, next) => {
   }
 };
 
+// Додані мідлвари для валідації
+const validateRegisterBody = validateBody(validationSchemas.registerSchema);
+const validateLoginBody = validateBody(validationSchemas.loginSchema);
+
 module.exports = {
   registerUser,
   loginUser,
   refreshSession,
   logoutUser,
+  validateRegisterBody,
+  validateLoginBody,
 };

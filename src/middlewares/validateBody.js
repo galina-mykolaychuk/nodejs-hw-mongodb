@@ -1,12 +1,14 @@
 // src/middlewares/validateBody.js
 
-const { ValidationError } = require('joi');
+const Joi = require('joi');
+const createHttpError = require('http-errors');
 
+// Мідлвара для валідації тіла запиту
 const validateBody = (schema) => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body);
     if (error) {
-      return res.status(400).json({ message: error.message });
+      return next(createHttpError(400, error.details[0].message));
     }
     next();
   };
