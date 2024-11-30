@@ -1,11 +1,15 @@
 // src/controllers/auth.js
 
-const authService = require('../services/auth');
+const crypto = require('crypto');
 const createHttpError = require('http-errors');
 const Session = require('../db/models/Session');
-const jwt = require('jsonwebtoken');
+const authService = require('../services/auth');
 const validateBody = require('../middlewares/validateBody');
 const validationSchemas = require('../validation/authSchemas');
+
+// Генерація токену через crypto
+const generateToken = (length = 64) =>
+  crypto.randomBytes(length).toString('hex');
 
 // Реєстрація нового користувача
 const registerUser = async (req, res, next) => {
@@ -15,7 +19,7 @@ const registerUser = async (req, res, next) => {
     const newUser = await authService.register({ name, email, password });
 
     res.status(201).json({
-      status: '201',
+      status: 201,
       message: 'Successfully registered a user!',
       data: {
         id: newUser._id,
@@ -36,7 +40,9 @@ const loginUser = async (req, res, next) => {
     const { email, password } = req.body;
 
     const user = await authService.login({ email, password });
-    const { accessToken, refreshToken } = authService.generateTokens(user._id);
+
+    const accessToken = generateToken();
+    const refreshToken = generateToken();
 
     await Session.findOneAndDelete({ userId: user._id });
 
@@ -44,8 +50,8 @@ const loginUser = async (req, res, next) => {
       userId: user._id,
       accessToken,
       refreshToken,
-      accessTokenValidUntil: Date.now() + 15 * 60 * 1000,
-      refreshTokenValidUntil: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      accessTokenValidUntil: Date.now() + 15 * 60 * 1000, // 15 хвилин
+      refreshTokenValidUntil: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 днів
     });
     await session.save();
 
@@ -55,7 +61,7 @@ const loginUser = async (req, res, next) => {
     });
 
     res.status(200).json({
-      status: '200',
+      status: 200,
       message: 'Successfully logged in a user!',
       data: {
         accessToken,
@@ -75,27 +81,25 @@ const refreshSession = async (req, res, next) => {
       throw createHttpError(401, 'Refresh token is missing or invalid.');
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const userId = decoded.userId;
+    const session = await Session.findOne({ refreshToken });
 
-    const user = await authService.getUserById(userId);
-    if (!user) {
-      throw createHttpError(404, 'User not found.');
+    if (!session || session.refreshTokenValidUntil < Date.now()) {
+      throw createHttpError(401, 'Refresh token is expired or invalid.');
     }
 
-    const { accessToken, refreshToken: newRefreshToken } =
-      authService.generateTokens(user._id);
+    const accessToken = generateToken();
+    const newRefreshToken = generateToken();
 
-    await Session.findOneAndDelete({ userId: user._id });
+    await Session.findOneAndDelete({ userId: session.userId });
 
-    const session = new Session({
-      userId: user._id,
+    const newSession = new Session({
+      userId: session.userId,
       accessToken,
       refreshToken: newRefreshToken,
       accessTokenValidUntil: Date.now() + 15 * 60 * 1000,
       refreshTokenValidUntil: Date.now() + 30 * 24 * 60 * 60 * 1000,
     });
-    await session.save();
+    await newSession.save();
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
@@ -103,7 +107,7 @@ const refreshSession = async (req, res, next) => {
     });
 
     res.status(200).json({
-      status: '200',
+      status: 200,
       message: 'Successfully refreshed a session!',
       data: {
         accessToken,
@@ -123,10 +127,7 @@ const logoutUser = async (req, res, next) => {
       throw createHttpError(401, 'No refresh token provided.');
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const sessionId = decoded.userId;
-
-    await Session.findOneAndDelete({ userId: sessionId });
+    await Session.findOneAndDelete({ refreshToken });
 
     res.clearCookie('refreshToken', { httpOnly: true });
 
