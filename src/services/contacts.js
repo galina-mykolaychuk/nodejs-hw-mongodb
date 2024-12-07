@@ -4,6 +4,7 @@ const Contact = require('../db/models/Contact');
 
 // Сервіс для отримання всіх контактів з пагінацією, сортуванням та фільтрацією
 const getAllContacts = async ({
+  userId,
   page = 1,
   perPage = 10,
   sortBy = 'name',
@@ -11,14 +12,14 @@ const getAllContacts = async ({
   filter = {},
 }) => {
   const skip = (page - 1) * perPage; // Визначаємо, з якого елементу почати
-  const totalItems = await Contact.countDocuments(filter); // Загальна кількість контактів з урахуванням фільтра
+  const totalItems = await Contact.countDocuments({ ...filter, userId }); // Загальна кількість контактів з урахуванням фільтра
 
   // Динамічне сортування: сортуємо за заданим полем і порядком
   const sortObject = {};
   sortObject[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
   // Отримуємо контакти з пагінацією, сортуванням та фільтрацією
-  const contacts = await Contact.find(filter)
+  const contacts = await Contact.find({ ...filter, userId }) // Фільтрація за userId
     .skip(skip) // Пропускаємо перші елементи для пагінації
     .limit(perPage) // Ліміт на кількість елементів на сторінці
     .sort(sortObject); // Сортуємо за заданими параметрами
@@ -27,8 +28,8 @@ const getAllContacts = async ({
 };
 
 // Сервіс для отримання контакту за ID
-const getContactById = async (contactId) => {
-  return await Contact.findById(contactId);
+const getContactById = async (contactId, userId) => {
+  return await Contact.findOne({ _id: contactId, userId }); // Перевірка чи контакт належить користувачу
 };
 
 // Сервіс для створення нового контакту
@@ -39,8 +40,8 @@ const createContact = async (contactData) => {
 };
 
 // Сервіс для видалення контакту
-const deleteContact = async (contactId) => {
-  const contact = await Contact.findById(contactId);
+const deleteContact = async (contactId, userId) => {
+  const contact = await Contact.findOne({ _id: contactId, userId }); // Перевірка чи контакт належить користувачу
 
   if (!contact) {
     throw new Error('Contact not found');
@@ -50,8 +51,8 @@ const deleteContact = async (contactId) => {
 };
 
 // Сервіс для оновлення існуючого контакту
-const updateContact = async (contactId, contactData) => {
-  const contact = await Contact.findById(contactId);
+const updateContact = async (contactId, contactData, userId) => {
+  const contact = await Contact.findOne({ _id: contactId, userId }); // Перевірка чи контакт належить користувачу
 
   if (!contact) {
     throw new Error('Contact not found');

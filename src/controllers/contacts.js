@@ -1,21 +1,21 @@
 // src/controllers/contacts.js
 
 const createHttpError = require('http-errors');
-const Contact = require('../db/models/Contact');
+const contactsService = require('../services/contacts'); // Використання сервісів у контролері
 
 // Функція для створення нового контакту
 const createContact = async (req, res, next) => {
   try {
-    // Додаємо userId поточного користувача до нового контакту
-    const newContact = new Contact({
+    const newContact = await contactsService.createContact({
       ...req.body,
       userId: req.user._id, // userId з об'єкта req.user
     });
 
-    // Зберігаємо контакт у базі даних
-    await newContact.save();
-
-    res.status(201).json(newContact);
+    res.status(201).json({
+      status: 201,
+      message: 'Contact created successfully',
+      data: newContact,
+    });
   } catch (error) {
     next(error);
   }
@@ -24,9 +24,27 @@ const createContact = async (req, res, next) => {
 // Функція для отримання всіх контактів поточного користувача
 const getAllContacts = async (req, res, next) => {
   try {
-    // Шукаємо контакти тільки для поточного користувача
-    const contacts = await Contact.find({ userId: req.user._id });
-    res.json(contacts);
+    const { contacts, totalItems } = await contactsService.getAllContacts({
+      userId: req.user._id, // Передаємо userId до сервісів
+      page: req.query.page || 1, // Отримуємо сторінку з параметрів запиту
+      perPage: req.query.perPage || 10, // Отримуємо perPage з параметрів запиту
+    });
+
+    const totalPages = Math.ceil(totalItems / (req.query.perPage || 10)); // Обчислюємо загальну кількість сторінок
+
+    res.json({
+      status: 200,
+      message: 'Contacts retrieved successfully',
+      data: {
+        contacts,
+        pagination: {
+          totalItems,
+          totalPages,
+          currentPage: req.query.page || 1,
+          perPage: req.query.perPage || 10,
+        },
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -35,17 +53,20 @@ const getAllContacts = async (req, res, next) => {
 // Функція для отримання контакту за ID
 const getContactById = async (req, res, next) => {
   try {
-    // Шукаємо контакт за ID і перевіряємо, чи належить він поточному користувачу
-    const contact = await Contact.findOne({
-      _id: req.params.contactId,
-      userId: req.user._id,
-    });
+    const contact = await contactsService.getContactById(
+      req.params.contactId,
+      req.user._id,
+    ); // Передаємо userId до сервісів
 
     if (!contact) {
       return next(createHttpError(404, 'Contact not found or not authorized'));
     }
 
-    res.json(contact);
+    res.json({
+      status: 200,
+      message: 'Contact retrieved successfully',
+      data: contact,
+    });
   } catch (error) {
     next(error);
   }
@@ -54,18 +75,21 @@ const getContactById = async (req, res, next) => {
 // Функція для оновлення контакту
 const updateContact = async (req, res, next) => {
   try {
-    // Оновлюємо тільки ті контакти, які належать поточному користувачу
-    const updatedContact = await Contact.findOneAndUpdate(
-      { _id: req.params.contactId, userId: req.user._id }, // Перевірка userId
+    const updatedContact = await contactsService.updateContact(
+      req.params.contactId,
       req.body,
-      { new: true },
-    );
+      req.user._id,
+    ); // Передаємо userId до сервісів
 
     if (!updatedContact) {
       return next(createHttpError(404, 'Contact not found or not authorized'));
     }
 
-    res.json(updatedContact);
+    res.json({
+      status: 200,
+      message: 'Contact updated successfully',
+      data: updatedContact,
+    });
   } catch (error) {
     next(error);
   }
@@ -74,15 +98,7 @@ const updateContact = async (req, res, next) => {
 // Функція для видалення контакту
 const deleteContact = async (req, res, next) => {
   try {
-    // Видаляємо контакт, якщо він належить поточному користувачу
-    const deletedContact = await Contact.findOneAndDelete({
-      _id: req.params.contactId,
-      userId: req.user._id,
-    });
-
-    if (!deletedContact) {
-      return next(createHttpError(404, 'Contact not found or not authorized'));
-    }
+    await contactsService.deleteContact(req.params.contactId, req.user._id); // Передаємо userId до сервісів
 
     res.status(200).json({
       status: 200,

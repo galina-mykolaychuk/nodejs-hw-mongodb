@@ -3,7 +3,7 @@
 const Joi = require('joi');
 const createHttpError = require('http-errors');
 
-// Мідлвара для валідації тіла запиту
+// Middleware для валідації тіла запиту
 const validateBody = (schema) => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body);

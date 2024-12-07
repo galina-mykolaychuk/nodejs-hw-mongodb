@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 const createHttpError = require('http-errors');
 const Session = require('../db/models/Session');
-const authService = require('../services/auth');
+const authService = require('../services/auth'); // Використання сервісів у контролері
 const validateBody = require('../middlewares/validateBody');
 const validationSchemas = require('../validation/authSchemas');
 
@@ -41,19 +41,9 @@ const loginUser = async (req, res, next) => {
 
     const user = await authService.login({ email, password });
 
-    const accessToken = generateToken();
-    const refreshToken = generateToken();
+    const { accessToken, refreshToken } = authService.generateTokens(); // Використання сервісів для генерації токенів
 
-    await Session.findOneAndDelete({ userId: user._id });
-
-    const session = new Session({
-      userId: user._id,
-      accessToken,
-      refreshToken,
-      accessTokenValidUntil: Date.now() + 15 * 60 * 1000, // 15 хвилин
-      refreshTokenValidUntil: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 днів
-    });
-    await session.save();
+    await authService.saveSession(user._id, accessToken, refreshToken); // Використання сервісів для збереження сесії
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -90,16 +80,7 @@ const refreshSession = async (req, res, next) => {
     const accessToken = generateToken();
     const newRefreshToken = generateToken();
 
-    await Session.findOneAndDelete({ userId: session.userId });
-
-    const newSession = new Session({
-      userId: session.userId,
-      accessToken,
-      refreshToken: newRefreshToken,
-      accessTokenValidUntil: Date.now() + 15 * 60 * 1000,
-      refreshTokenValidUntil: Date.now() + 30 * 24 * 60 * 60 * 1000,
-    });
-    await newSession.save();
+    await authService.saveSession(session.userId, accessToken, newRefreshToken); // Використання сервісів для збереження сесії
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
@@ -137,7 +118,7 @@ const logoutUser = async (req, res, next) => {
   }
 };
 
-// Додані мідлвари для валідації
+// Middleware для валідації
 const validateRegisterBody = validateBody(validationSchemas.registerSchema);
 const validateLoginBody = validateBody(validationSchemas.loginSchema);
 
