@@ -24,25 +24,28 @@ const createContact = async (req, res, next) => {
 // Функція для отримання всіх контактів поточного користувача
 const getAllContacts = async (req, res, next) => {
   try {
+    const page = parseInt(req.query.page, 10) || 1; // Поточна сторінка
+    const perPage = parseInt(req.query.perPage, 10) || 10; // Кількість елементів на сторінці
+
     const { contacts, totalItems } = await contactsService.getAllContacts({
       userId: req.user._id, // Передаємо userId до сервісів
-      page: req.query.page || 1, // Отримуємо сторінку з параметрів запиту
-      perPage: req.query.perPage || 10, // Отримуємо perPage з параметрів запиту
+      page,
+      perPage,
     });
 
-    const totalPages = Math.ceil(totalItems / (req.query.perPage || 10)); // Обчислюємо загальну кількість сторінок
+    const totalPages = Math.ceil(totalItems / perPage); // Загальна кількість сторінок
 
     res.json({
       status: 200,
-      message: 'Contacts retrieved successfully',
+      message: 'Successfully found contacts!',
       data: {
-        contacts,
-        pagination: {
-          totalItems,
-          totalPages,
-          currentPage: req.query.page || 1,
-          perPage: req.query.perPage || 10,
-        },
+        data: contacts, // Дані контактів
+        page,
+        perPage,
+        totalItems,
+        totalPages,
+        hasPreviousPage: page > 1, // Перевірка наявності попередньої сторінки
+        hasNextPage: page < totalPages, // Перевірка наявності наступної сторінки
       },
     });
   } catch (error) {
@@ -100,10 +103,7 @@ const deleteContact = async (req, res, next) => {
   try {
     await contactsService.deleteContact(req.params.contactId, req.user._id); // Передаємо userId до сервісів
 
-    res.status(200).json({
-      status: 200,
-      message: 'Contact deleted successfully',
-    });
+    res.status(204).end(); // Відповідь зі статусом 204 та порожнім тілом
   } catch (error) {
     next(error);
   }
