@@ -12,7 +12,7 @@ const {
 } = require('../validation/contactsSchemas');
 
 // Маршрут для отримання всіх контактів
-router.get('/', authenticate, contactsController.getAllContacts); // Додано authenticate для перевірки токену
+router.get('/', authenticate, contactsController.getAllContacts);
 
 // Маршрут для отримання контакту за ID
 router.get(
@@ -27,7 +27,7 @@ router.post(
   '/',
   authenticate,
   validateBody(contactSchema),
-  contactsController.createContact, // Викликаємо контролер для створення контакту
+  contactsController.createContact,
 );
 
 // Маршрут для оновлення контакту з валідацією ID і body

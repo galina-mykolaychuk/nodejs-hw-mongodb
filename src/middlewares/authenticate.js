@@ -45,7 +45,7 @@ const authenticate = async (req, res, next) => {
       new Date() > new Date(session.accessTokenValidUntil);
     if (isAccessTokenExpired) {
       console.log('Access token expired for session:', session);
-      return next(createHttpError(401, 'Access token has expired'));
+      return next(createHttpError(401, 'Access token expired'));
     }
 
     // Шукаємо користувача в базі даних за session.userId

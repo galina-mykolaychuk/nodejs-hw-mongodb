@@ -1,19 +1,19 @@
 // src/controllers/contacts.js
 
 const createHttpError = require('http-errors');
-const contactsService = require('../services/contacts'); // Використання сервісів у контролері
+const contactsService = require('../services/contacts');
 
 // Функція для створення нового контакту
 const createContact = async (req, res, next) => {
   try {
     const newContact = await contactsService.createContact({
       ...req.body,
-      userId: req.user._id, // userId з об'єкта req.user
+      userId: req.user._id,
     });
 
     res.status(201).json({
       status: 201,
-      message: 'Contact created successfully',
+      message: 'Successfully created a contact!',
       data: newContact,
     });
   } catch (error) {
@@ -24,28 +24,28 @@ const createContact = async (req, res, next) => {
 // Функція для отримання всіх контактів поточного користувача
 const getAllContacts = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1; // Поточна сторінка
-    const perPage = parseInt(req.query.perPage, 10) || 10; // Кількість елементів на сторінці
+    const page = parseInt(req.query.page, 10) || 1;
+    const perPage = parseInt(req.query.perPage, 10) || 10;
 
     const { contacts, totalItems } = await contactsService.getAllContacts({
-      userId: req.user._id, // Передаємо userId до сервісів
+      userId: req.user._id,
       page,
       perPage,
     });
 
-    const totalPages = Math.ceil(totalItems / perPage); // Загальна кількість сторінок
+    const totalPages = Math.ceil(totalItems / perPage);
 
     res.json({
       status: 200,
       message: 'Successfully found contacts!',
       data: {
-        data: contacts, // Дані контактів
+        data: contacts,
         page,
         perPage,
         totalItems,
         totalPages,
-        hasPreviousPage: page > 1, // Перевірка наявності попередньої сторінки
-        hasNextPage: page < totalPages, // Перевірка наявності наступної сторінки
+        hasPreviousPage: page > 1,
+        hasNextPage: page < totalPages,
       },
     });
   } catch (error) {
@@ -59,15 +59,15 @@ const getContactById = async (req, res, next) => {
     const contact = await contactsService.getContactById(
       req.params.contactId,
       req.user._id,
-    ); // Передаємо userId до сервісів
+    );
 
     if (!contact) {
-      return next(createHttpError(404, 'Contact not found or not authorized'));
+      return next(createHttpError(404, 'Contact not found'));
     }
 
     res.json({
       status: 200,
-      message: 'Contact retrieved successfully',
+      message: 'Successfully found contact!',
       data: contact,
     });
   } catch (error) {
@@ -82,15 +82,15 @@ const updateContact = async (req, res, next) => {
       req.params.contactId,
       req.body,
       req.user._id,
-    ); // Передаємо userId до сервісів
+    );
 
     if (!updatedContact) {
-      return next(createHttpError(404, 'Contact not found or not authorized'));
+      return next(createHttpError(404, 'Contact not found'));
     }
 
     res.json({
       status: 200,
-      message: 'Contact updated successfully',
+      message: 'Successfully patched a contact!',
       data: updatedContact,
     });
   } catch (error) {
@@ -101,7 +101,7 @@ const updateContact = async (req, res, next) => {
 // Функція для видалення контакту
 const deleteContact = async (req, res, next) => {
   try {
-    await contactsService.deleteContact(req.params.contactId, req.user._id); // Передаємо userId до сервісів
+    await contactsService.deleteContact(req.params.contactId, req.user._id);
 
     res.status(204).end(); // Відповідь зі статусом 204 та порожнім тілом
   } catch (error) {

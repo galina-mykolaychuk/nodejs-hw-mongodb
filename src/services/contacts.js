@@ -1,6 +1,7 @@
 // src/services/contacts.js
 
 const Contact = require('../db/models/Contact');
+const createHttpError = require('http-errors');
 
 // Сервіс для отримання всіх контактів з пагінацією, сортуванням та фільтрацією
 const getAllContacts = async ({
@@ -29,7 +30,11 @@ const getAllContacts = async ({
 
 // Сервіс для отримання контакту за ID
 const getContactById = async (contactId, userId) => {
-  return await Contact.findOne({ _id: contactId, userId }); // Перевірка чи контакт належить користувачу
+  const contact = await Contact.findOne({ _id: contactId, userId }); // Перевірка чи контакт належить користувачу
+  if (!contact) {
+    throw createHttpError(404, 'Contact not found');
+  }
+  return contact;
 };
 
 // Сервіс для створення нового контакту
@@ -44,7 +49,7 @@ const deleteContact = async (contactId, userId) => {
   const contact = await Contact.findOne({ _id: contactId, userId }); // Перевірка чи контакт належить користувачу
 
   if (!contact) {
-    throw new Error('Contact not found');
+    throw createHttpError(404, 'Contact not found');
   }
 
   await Contact.deleteOne({ _id: contactId });
@@ -55,7 +60,7 @@ const updateContact = async (contactId, contactData, userId) => {
   const contact = await Contact.findOne({ _id: contactId, userId }); // Перевірка чи контакт належить користувачу
 
   if (!contact) {
-    throw new Error('Contact not found');
+    throw createHttpError(404, 'Contact not found');
   }
 
   Object.assign(contact, contactData);
