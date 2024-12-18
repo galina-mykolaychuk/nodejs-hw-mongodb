@@ -84,10 +84,25 @@ const getUserById = async (userId) => {
   return await User.findById(userId);
 };
 
+// Нова функція для пошуку користувача за email
+const findUserByEmail = async (email) => {
+  const user = await User.findOne({ email });
+  return user;
+};
+
+const saveResetToken = async (userId, resetToken) => {
+  await User.findByIdAndUpdate(userId, {
+    resetToken,
+    resetTokenValidUntil: Date.now() + 15 * 60 * 1000, // Термін дії токена - 15 хвилин
+  });
+};
+
 module.exports = {
   register,
   login,
   generateTokens,
   saveSession,
   getUserById,
+  findUserByEmail, // Додано нову функцію до експорту
+  saveResetToken,
 };

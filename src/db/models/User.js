@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, match: /.+@.+\..+/ },
     password: { type: String, required: true },
+    resetToken: { type: String }, // Поле для збереження токена для скидання пароля
+    resetTokenValidUntil: { type: Date }, // Термін дії токена
   },
   {
     timestamps: true, // автоматично додає createdAt та updatedAt

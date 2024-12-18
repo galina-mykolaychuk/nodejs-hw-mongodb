@@ -9,27 +9,28 @@ const validationSchemas = require('../validation/authSchemas');
 // Валідація при реєстрації
 router.post(
   '/register',
-  validateBody(validationSchemas.registerSchema), // Валідація тіла запиту
-  authController.registerUser, // Контролер для реєстрації користувача
+  validateBody(validationSchemas.registerSchema),
+  authController.registerUser,
 );
 
 // Валідація при логіні
 router.post(
   '/login',
-  validateBody(validationSchemas.loginSchema), // Валідація тіла запиту
-  authController.loginUser, // Контролер для логіну користувача
+  validateBody(validationSchemas.loginSchema),
+  authController.loginUser,
 );
 
 // Оновлення сесії за допомогою рефреш токена
-router.post(
-  '/refresh',
-  authController.refreshSession, // Контролер для оновлення сесії
-);
+router.post('/refresh', authController.refreshSession);
 
 // Логаут користувача
+router.post('/logout', authController.logoutUser);
+
+// Надсилання email для скидання пароля
 router.post(
-  '/logout',
-  authController.logoutUser, // Контролер для логауту користувача
+  '/send-reset-email',
+  validateBody(validationSchemas.emailSchema), // Валідація email
+  authController.sendResetEmail, // Контролер для скидання пароля
 );
 
 module.exports = router;

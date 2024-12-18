@@ -6,7 +6,7 @@ const pino = require('pino');
 const pinoHttp = require('pino-http');
 const cookieParser = require('cookie-parser');
 const contactsRouter = require('./routers/contacts');
-const authRouter = require('./routers/auth');
+const authRouter = require('./routers/auth'); // Підключення нового роутера
 const initMongoConnection = require('./db/initMongoConnection');
 const errorHandler = require('./middlewares/errorHandler');
 const notFoundHandler = require('./middlewares/notFoundHandler');
@@ -25,7 +25,7 @@ async function setupServer() {
   app.use('/contacts', contactsRouter);
 
   // Маршрути для аутентифікації
-  app.use('/auth', authRouter);
+  app.use('/auth', authRouter); // Підключення маршруту для аутентифікації
 
   // Middleware для неіснуючих маршрутів
   app.use(notFoundHandler);

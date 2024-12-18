@@ -15,5 +15,13 @@ const loginSchema = Joi.object({
   password: Joi.string().min(6).required(),
 });
 
-module.exports.registerSchema = registerSchema;
-module.exports.loginSchema = loginSchema;
+// Схема для email
+const emailSchema = Joi.object({
+  email: Joi.string().email().required(), // Валідація email
+});
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  emailSchema,
+};
