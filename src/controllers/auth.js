@@ -13,10 +13,6 @@ const User = require('../db/models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Генерація токену через crypto
-const generateToken = (length = 64) =>
-  crypto.randomBytes(length).toString('hex');
-
 // Транспортер для надсилання листів
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -145,9 +141,10 @@ const sendResetEmail = async (req, res, next) => {
       throw createHttpError(404, 'User not found');
     }
 
-    const resetToken = generateToken(32);
-
-    await authService.saveResetToken(user._id, resetToken);
+    // Генерація JWT токена для скидання пароля
+    const resetToken = jwt.sign({ email: user.email }, JWT_SECRET, {
+      expiresIn: '1h',
+    });
 
     const resetLink = `${process.env.APP_DOMAIN}/reset-password?token=${resetToken}`;
 
@@ -190,7 +187,9 @@ const resetPassword = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     user.password = hashedPassword;
 
-    user.sessions = [];
+    // Очищення сессії користувача
+    await Session.deleteMany({ userId: user._id });
+
     await user.save();
 
     res.status(200).json({
