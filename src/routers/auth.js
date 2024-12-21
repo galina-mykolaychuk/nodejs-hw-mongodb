@@ -33,4 +33,11 @@ router.post(
   authController.sendResetEmail, // Контролер для скидання пароля
 );
 
+// Скидання пароля
+router.post(
+  '/reset-pwd',
+  validateBody(validationSchemas.resetPwdSchema), // Валідація токена та нового пароля
+  authController.resetPassword, // Контролер для обробки скидання пароля
+);
+
 module.exports = router;

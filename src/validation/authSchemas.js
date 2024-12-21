@@ -20,8 +20,15 @@ const emailSchema = Joi.object({
   email: Joi.string().email().required(), // Валідація email
 });
 
+// Схема для скидання email
+const resetPwdSchema = Joi.object({
+  token: Joi.string().required(),
+  password: Joi.string().min(8).required(),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
   emailSchema,
+  resetPwdSchema,
 };

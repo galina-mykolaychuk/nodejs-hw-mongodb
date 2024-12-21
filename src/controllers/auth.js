@@ -3,10 +3,15 @@
 const crypto = require('crypto');
 const createHttpError = require('http-errors');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const Session = require('../db/models/Session');
-const authService = require('../services/auth'); // Використання сервісів у контролері
+const authService = require('../services/auth');
 const validateBody = require('../middlewares/validateBody');
 const validationSchemas = require('../validation/authSchemas');
+const User = require('../db/models/User');
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Генерація токену через crypto
 const generateToken = (length = 64) =>
@@ -52,9 +57,9 @@ const loginUser = async (req, res, next) => {
 
     const user = await authService.login({ email, password });
 
-    const { accessToken, refreshToken } = authService.generateTokens(); // Використання сервісів для генерації токенів
+    const { accessToken, refreshToken } = authService.generateTokens();
 
-    await authService.saveSession(user._id, accessToken, refreshToken); // Використання сервісів для збереження сесії
+    await authService.saveSession(user._id, accessToken, refreshToken);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -91,7 +96,7 @@ const refreshSession = async (req, res, next) => {
     const accessToken = generateToken();
     const newRefreshToken = generateToken();
 
-    await authService.saveSession(session.userId, accessToken, newRefreshToken); // Використання сервісів для збереження сесії
+    await authService.saveSession(session.userId, accessToken, newRefreshToken);
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
@@ -134,7 +139,7 @@ const sendResetEmail = async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    const user = await authService.findUserByEmail(email); // Знайти користувача за email
+    const user = await authService.findUserByEmail(email);
 
     if (!user) {
       throw createHttpError(404, 'User not found');
@@ -142,7 +147,7 @@ const sendResetEmail = async (req, res, next) => {
 
     const resetToken = generateToken(32);
 
-    await authService.saveResetToken(user._id, resetToken); // Зберегти токен для скидання пароля
+    await authService.saveResetToken(user._id, resetToken);
 
     const resetLink = `${process.env.APP_DOMAIN}/reset-password?token=${resetToken}`;
 
@@ -150,13 +155,47 @@ const sendResetEmail = async (req, res, next) => {
       from: process.env.SMTP_FROM,
       to: email,
       subject: 'Password Reset',
-      html: `<p>Click the link below to reset your password:</p>
-             <a href="${resetLink}">${resetLink}</a>`,
+      html: `<p>Click the link below to reset your password:</p><a href="${resetLink}">${resetLink}</a>`,
     });
 
     res.status(200).json({
       status: 200,
       message: 'Reset password email has been sent.',
+      data: {},
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Скидання пароля
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (error) {
+      throw createHttpError(401, 'Token is expired or invalid.');
+    }
+
+    const { email } = decoded;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw createHttpError(404, 'User not found!');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+
+    user.sessions = [];
+    await user.save();
+
+    res.status(200).json({
+      status: 200,
+      message: 'Password has been successfully reset.',
       data: {},
     });
   } catch (error) {
@@ -174,6 +213,7 @@ module.exports = {
   refreshSession,
   logoutUser,
   sendResetEmail,
+  resetPassword,
   validateRegisterBody,
   validateLoginBody,
 };
