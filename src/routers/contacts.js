@@ -6,6 +6,7 @@ const contactsController = require('../controllers/contacts');
 const validateBody = require('../middlewares/validateBody');
 const isValidId = require('../middlewares/isValidId');
 const authenticate = require('../middlewares/authenticate');
+const upload = require('../middlewares/upload'); // Додаємо middleware для файлів
 const {
   contactSchema,
   contactUpdateSchema,
@@ -26,6 +27,7 @@ router.get(
 router.post(
   '/',
   authenticate,
+  upload.single('photo'), // Підтримка завантаження одного фото
   validateBody(contactSchema),
   contactsController.createContact,
 );
@@ -35,6 +37,7 @@ router.patch(
   '/:contactId',
   authenticate,
   isValidId,
+  upload.single('photo'), // Підтримка завантаження одного фото
   validateBody(contactUpdateSchema),
   contactsController.updateContact,
 );

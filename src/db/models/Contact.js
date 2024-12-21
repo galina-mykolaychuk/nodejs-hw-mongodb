@@ -15,11 +15,15 @@ const contactSchema = new mongoose.Schema(
       required: true,
       default: 'personal',
     },
+    // Додаємо поле для userId
     userId: {
-      // Додаємо поле для userId
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    photo: {
+      type: String, // URL до фото
+      default: null,
     },
   },
   {

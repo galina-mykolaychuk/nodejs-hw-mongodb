@@ -6,9 +6,12 @@ const contactsService = require('../services/contacts');
 // Функція для створення нового контакту
 const createContact = async (req, res, next) => {
   try {
+    const photoUrl = req.file ? req.file.cloudinaryUrl : null; // Отримуємо URL фото
+
     const newContact = await contactsService.createContact({
       ...req.body,
       userId: req.user._id,
+      photo: photoUrl, // Додаємо фото до даних контакту
     });
 
     res.status(201).json({
@@ -78,9 +81,14 @@ const getContactById = async (req, res, next) => {
 // Функція для оновлення контакту
 const updateContact = async (req, res, next) => {
   try {
+    const photoUrl = req.file ? req.file.cloudinaryUrl : undefined; // Отримуємо URL фото
+
     const updatedContact = await contactsService.updateContact(
       req.params.contactId,
-      req.body,
+      {
+        ...req.body,
+        ...(photoUrl && { photo: photoUrl }),
+      },
       req.user._id,
     );
 
