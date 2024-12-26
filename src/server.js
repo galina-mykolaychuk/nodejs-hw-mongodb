@@ -5,8 +5,11 @@ const cors = require('cors');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
 const cookieParser = require('cookie-parser');
+const swaggerUi = require('swagger-ui-express');
 const contactsRouter = require('./routers/contacts');
-const authRouter = require('./routers/auth'); // Підключення нового роутера
+const authRouter = require('./routers/auth');
+const swaggerMiddleware = require('./middlewares/swaggerDocs');
+const swaggerDocument = require('../docs/swagger.json');
 const initMongoConnection = require('./db/initMongoConnection');
 const errorHandler = require('./middlewares/errorHandler');
 const notFoundHandler = require('./middlewares/notFoundHandler');
@@ -25,7 +28,10 @@ async function setupServer() {
   app.use('/contacts', contactsRouter);
 
   // Маршрути для аутентифікації
-  app.use('/auth', authRouter); // Підключення маршруту для аутентифікації
+  app.use('/auth', authRouter);
+
+  // Middleware для Swagger
+  swaggerMiddleware(app, '/api-docs', swaggerDocument);
 
   // Middleware для неіснуючих маршрутів
   app.use(notFoundHandler);
