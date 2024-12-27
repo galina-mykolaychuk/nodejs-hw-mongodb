@@ -16,7 +16,7 @@ parameters:
       example: '67000056db00dbbe331100de'
 responses:
   '200':
-    description: 'get contact by id'
+    description: 'Get contact by id'
     content:
       application/json:
         schema:
@@ -35,5 +35,7 @@ responses:
             data:
               type: object
               $ref: '../../../components/schemas/contact.yaml'
+  '401':
+    $ref: '../../components/responses/401.yaml'
   '404':
     $ref: '../../../components/responses/404.yaml'

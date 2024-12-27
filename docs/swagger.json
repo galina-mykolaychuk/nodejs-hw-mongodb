@@ -178,7 +178,7 @@
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "required": ["name", "phoneNumber", "email"],
+                "required": ["name", "phoneNumber", "contactType"],
                 "properties": {
                   "name": {
                     "description": "contact's name",
@@ -217,7 +217,7 @@
         },
         "responses": {
           "201": {
-            "description": "creates a contact",
+            "description": "Creates a contact",
             "content": {
               "application/json": {
                 "schema": {
@@ -271,7 +271,7 @@
         ],
         "responses": {
           "200": {
-            "description": "get contact by id",
+            "description": "Get contact by id",
             "content": {
               "application/json": {
                 "schema": {
@@ -295,6 +295,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
           "404": {
             "$ref": "#/components/responses/404"
           }
@@ -304,7 +307,7 @@
         "tags": ["Contacts"],
         "summary": "Update contact",
         "operationId": "updateContact",
-        "description": "Update a contacts with payload",
+        "description": "Update a contact with payload",
         "security": [
           {
             "bearerAuth": []
@@ -388,6 +391,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
           "404": {
             "$ref": "#/components/responses/404"
           }
@@ -397,7 +403,7 @@
         "tags": ["Contacts"],
         "summary": "Delete a contact",
         "operationId": "deleteContact",
-        "description": "delete a contact by ID",
+        "description": "Delete a contact by ID",
         "security": [
           {
             "bearerAuth": []
@@ -416,7 +422,10 @@
         ],
         "responses": {
           "204": {
-            "description": "delete contact"
+            "description": "Delete a contact"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
           },
           "404": {
             "$ref": "#/components/responses/404"
@@ -435,7 +444,7 @@
     "schemas": {
       "contact": {
         "type": "object",
-        "required": ["_id", "name", "phoneNumber"],
+        "required": ["_id", "name", "phoneNumber", "contactType", "userId"],
         "properties": {
           "_id": {
             "description": "contact's id",

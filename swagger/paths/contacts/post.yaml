@@ -15,7 +15,7 @@ requestBody:
         required:
           - name
           - phoneNumber
-          - email
+          - contactType
         properties:
           name:
             description: "contact's name"
@@ -43,7 +43,7 @@ requestBody:
             format: binary
 responses:
   '201':
-    description: creates a contact
+    description: Creates a contact
     content:
       application/json:
         schema:
