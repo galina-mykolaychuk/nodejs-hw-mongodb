@@ -30,17 +30,6 @@ parameters:
       type: string
       enum: ['asc', 'desc']
       example: 'asc'
-  - in: query
-    name: isFavourite
-    schema:
-      type: boolean
-      example: true
-  - in: query
-    name: type
-    schema:
-      type: string
-      enum: ['work', 'home', 'personal']
-      example: 'personal'
 responses:
   '200':
     description: Successfully found contacts!
